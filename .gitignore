@@ -1,2 +1,3 @@
 *.class
-be-high-level/target/classes/
+be-high-level/target/
+

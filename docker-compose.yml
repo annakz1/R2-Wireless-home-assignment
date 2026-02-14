@@ -16,3 +16,5 @@ services:
     #image: r2-be-demo
     build: ./be-high-level
     image: r2-be-high-level
+    ports:
+      - "4000:4000"
