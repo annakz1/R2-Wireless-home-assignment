@@ -1,3 +1,4 @@
 *.class
 be-high-level/target/
 
+.vscode/settings.json

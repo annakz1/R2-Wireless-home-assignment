@@ -1,3 +1,4 @@
+
 package com.r2.controller;
 
 import com.r2.dto.LoginRequest;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.r2.service.UserService;
 
 @RestController
 @RequestMapping("/api")
@@ -19,42 +21,45 @@ public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
+    private final UserService userService;
+
     @Value("${auth.correct-password}")
     private String correctPassword;
 
-    private final TokenService tokenService;
-    
-    public AuthController(TokenService tokenService) {
-        this.tokenService = tokenService;
+    public AuthController(UserService userService) {
+        this.userService = userService;
     }
-    
+
+    @PostMapping("/register")
+    @SecurityRequirements()
+    public ResponseEntity<?> register(@Valid @RequestBody LoginRequest request) {
+        userService.register(request.getEmail(), request.getPassword());
+        return ResponseEntity.ok("User registered successfully");
+    }
+
     @PostMapping("/login")
-    @SecurityRequirements()  // no auth required
+    @SecurityRequirements() // empty list- means no auth required
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        // Validate email format (handled by @Email annotation)
-        // Validate password
-        if (!correctPassword.equals(request.getPassword())) {
-            logger.error("Wrong email and password");
+        try {
+            LoginResponse response = userService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            logger.error(e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("Wrong email and password"));
+                    .body(new ErrorResponse(e.getMessage()));
         }
-        
-        String token = tokenService.generateToken();
-        return ResponseEntity.ok(new LoginResponse(token));
     }
-    
+
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = true) String authHeader) {
-        String token = tokenService.extractToken(authHeader);
-        
-        if (token == null || !tokenService.isValidToken(token)) {
-            logger.error("Invalid token");
+        try {
+            userService.logout(authHeader);
+            return ResponseEntity.ok("OK");
+        } catch (RuntimeException e) {
+            logger.error(e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("Invalid token"));
+                    .body(new ErrorResponse(e.getMessage()));
         }
-        
-        tokenService.invalidateToken(token);
-        return ResponseEntity.ok("OK");
     }
 
 }

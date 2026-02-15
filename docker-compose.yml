@@ -12,9 +12,18 @@ services:
     build: ./web
     image: r2-web
   be:
-    #build: ./be-demo
-    #image: r2-be-demo
     build: ./be-high-level
     image: r2-be-high-level
+    depends_on:
+      - db
     ports:
       - "4000:4000"
+
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: r2_db
